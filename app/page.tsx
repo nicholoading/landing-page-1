@@ -1,43 +1,15 @@
-"use client"
-
-import { useEffect, MouseEvent } from "react"
-import Header from "@/components/Header"
-import Hero from "@/components/Hero"
-import Teams from "@/components/Teams"
+"use client";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
-  const scrollToTeams = (e: MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault()
-    const teamsSection = document.getElementById("teams")
-    if (teamsSection) {
-      const yOffset = -80 // Adjust this value based on your header height
-      const y = teamsSection.getBoundingClientRect().top + window.pageYOffset + yOffset
-      window.scrollTo({ top: y, behavior: "smooth" })
-    }
-  }
+  const router = useRouter();
 
   useEffect(() => {
-    const hash = window.location.hash
-    if (hash === "#teams") {
-      setTimeout(() => {
-        const teamsSection = document.getElementById("teams")
-        if (teamsSection) {
-          const yOffset = -80
-          const y = teamsSection.getBoundingClientRect().top + window.pageYOffset + yOffset
-          window.scrollTo({ top: y, behavior: "smooth" })
-        }
-      }, 100)
-    }
-  }, [])
+    // Redirect to the desired route when the root is accessed
+    router.replace("/status"); // Change "/dashboard" to your desired route
+  }, [router]);
 
-  return (
-    <>
-      <Header />
-      <main>
-        <Hero scrollToTeams={scrollToTeams} />
-        <Teams />
-      </main>
-    </>
-  )
+  // Optional: Display a loading message while redirecting
+  return <div>Redirecting...</div>;
 }
-
