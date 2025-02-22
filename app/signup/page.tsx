@@ -275,42 +275,73 @@ export default function SignUp() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-    setIsLoading(true); // Set loading to true
-
+    setIsLoading(true);
+  
     if (!agreeToTerms) {
-      setError(
-        "You must agree to the terms and conditions to submit the form."
-      );
-      setIsLoading(false); // Set loading to false if terms not agreed
+      setError("You must agree to the terms and conditions.");
+      setIsLoading(false);
       return;
     }
-
+  
     try {
-      // Simulate an API call with a timeout and random success/failure
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Randomly determine success or failure
-      const success = Math.random() < 0.5;
-
-      if (success) {
-        console.log("Form submitted:", formData);
-        setIsSuccess(true);
-      } else {
-        throw new Error("Random failure");
-      }
-
+      const formattedData = {
+        ...formData,
+        teamMembers: JSON.stringify(formData.teamMembers), // Store as JSONB
+        registrationStatus: "Pending", // Default status
+      };
+  
+      // 1️⃣ Register the team in Supabase
+      const registerResponse = await fetch("/api/register-team", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formattedData),
+      });
+  
+      const registerData = await registerResponse.json();
+  
+      if (!registerResponse.ok) throw new Error(registerData.error);
+  
+      // 2️⃣ Send confirmation emails (Ensure all required fields are included)
+      const emailPayload = {
+        teamName: formData.teamName,
+        teacherEmail: formData.teacherEmail,
+        teacherName: formData.teacherName, // ✅ Include missing fields
+        teacherPhone: formData.teacherPhone, // ✅ Ensure teacherPhone is sent
+        teacherIC: formData.teacherIC, // ✅ Ensure teacherIC is sent
+        size: formData.size, // ✅ Include T-shirt size
+        representingSchool: formData.representingSchool,
+        schoolName: formData.schoolName,
+        schoolAddress: formData.schoolAddress,
+        postalCode: formData.postalCode,
+        educationLevel: formData.educationLevel,
+        category: formData.category,
+        city: formData.city,
+        state: formData.state,
+        teamMembers: formData.teamMembers,
+      };
+  
+      const emailResponse = await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(emailPayload), // ✅ Ensure correct payload
+      });
+  
+      const emailData = await emailResponse.json();
+  
+      if (!emailResponse.ok) throw new Error(emailData.error);
+  
+      setIsSuccess(true);
       setShowResultModal(true);
-      setAnimate(true);
     } catch (error) {
       console.error("Submission failed:", error);
       setIsSuccess(false);
       setShowResultModal(true);
-      setAnimate(true);
     } finally {
-      setIsLoading(false); // Set loading to false in finally block
+      setIsLoading(false);
     }
   };
-
+  
+  
   const handleCloseResultModal = () => {
     setShowResultModal(false);
     setAnimate(false);
