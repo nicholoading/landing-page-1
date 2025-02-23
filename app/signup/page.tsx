@@ -286,7 +286,7 @@ export default function SignUp() {
     try {
       const formattedData = {
         ...formData,
-        teamMembers: JSON.stringify(formData.teamMembers), // Store as JSONB
+        teamMembers: formData.teamMembers, // Store as JSONB
         registrationStatus: "Pending", // Default status
       };
   
