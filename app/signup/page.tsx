@@ -349,7 +349,9 @@ export default function SignUp() {
   const handleCloseResultModal = () => {
     setShowResultModal(false);
     setAnimate(false);
-    router.push("/");
+    if (isSuccess) {
+      router.push("/");
+    }
   };
 
   const nextStep = () => {
@@ -545,36 +547,38 @@ export default function SignUp() {
               Team Member {memberIndex + 1} Information
             </h3>
             <div className="grid grid-cols-1 gap-6">
-              {formData.representingSchool === 'no' && [
-                { label: "Name", name: "name", type: "text" },
-                { label: "IC", name: "ic", type: "text" },
-                { label: "School Name", name: "schoolName", type: "text" },
-              ].map((field) => (
-                <InputField
-                  key={`member-${memberIndex}-${field.name}`}
-                  label={field.label}
-                  name={field.name}
-                  type={field.type}
-                  value={formData.teamMembers[memberIndex][field.name]}
-                  onChange={(e) => handleChange(e, memberIndex)}
-                  required
-                />
-              ))}
-              
-              {formData.representingSchool === 'yes' && [
-                { label: "Name", name: "name", type: "text" },
-                { label: "IC", name: "ic", type: "text" },
-              ].map((field) => (
-                <InputField
-                  key={`member-${memberIndex}-${field.name}`}
-                  label={field.label}
-                  name={field.name}
-                  type={field.type}
-                  value={formData.teamMembers[memberIndex][field.name]}
-                  onChange={(e) => handleChange(e, memberIndex)}
-                  required
-                />
-              ))}
+              {formData.representingSchool === "no" &&
+                [
+                  { label: "Name", name: "name", type: "text" },
+                  { label: "IC", name: "ic", type: "text" },
+                  { label: "School Name", name: "schoolName", type: "text" },
+                ].map((field) => (
+                  <InputField
+                    key={`member-${memberIndex}-${field.name}`}
+                    label={field.label}
+                    name={field.name}
+                    type={field.type}
+                    value={formData.teamMembers[memberIndex][field.name]}
+                    onChange={(e) => handleChange(e, memberIndex)}
+                    required
+                  />
+                ))}
+
+              {formData.representingSchool === "yes" &&
+                [
+                  { label: "Name", name: "name", type: "text" },
+                  { label: "IC", name: "ic", type: "text" },
+                ].map((field) => (
+                  <InputField
+                    key={`member-${memberIndex}-${field.name}`}
+                    label={field.label}
+                    name={field.name}
+                    type={field.type}
+                    value={formData.teamMembers[memberIndex][field.name]}
+                    onChange={(e) => handleChange(e, memberIndex)}
+                    required
+                  />
+                ))}
               <SelectField
                 key={`member-${memberIndex}-gender`}
                 label="Gender"
