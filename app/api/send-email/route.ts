@@ -58,6 +58,8 @@ export async function POST(req: Request) {
         <tr><td>Email</td><td>${teacherEmail}</td></tr>
         <tr><td>Phone</td><td>${teacherPhone}</td></tr>
         <tr><td>IC</td><td>${teacherIC}</td></tr>
+                <tr><td>IC</td><td>${teacherSchoolName}</td></tr>
+
         <tr><td>T-Shirt Size</td><td>${size}</td></tr>
       </table>
 
@@ -69,6 +71,7 @@ export async function POST(req: Request) {
           <th>Gender</th>
           <th>Race</th>
           <th>Grade</th>
+          <th>School Name</th>
           <th>Parent Name</th>
           <th>Parent Phone</th>
           <th>Parent Email</th>
@@ -84,6 +87,8 @@ export async function POST(req: Request) {
           <td>${member.gender}</td>
           <td>${member.race}</td>
           <td>${member.grade}</td>
+                    <td>${member.schoolName}</td>
+
           <td>${member.parentName}</td>
           <td>${member.parentPhone}</td>
           <td>${member.parentEmail}</td>
