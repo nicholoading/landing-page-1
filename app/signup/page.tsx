@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ToastProvider, ToastViewport } from "@/components/ui/toast";
+import Link from "next/link";
 
 const validateEmail = (email: string): string => {
   const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -525,15 +526,24 @@ export default function SignUp() {
                   required
                 />
               )}
-
-              <SelectField
-                label="T-Shirt Size"
-                name="size"
-                value={formData.size}
-                onChange={(value) => handleSelectChange(value, "size")}
-                options={sizes}
-                required
-              />
+              <div className="flex flex-col">
+                <SelectField
+                  label="T-Shirt Size"
+                  name="size"
+                  value={formData.size}
+                  onChange={(value) => handleSelectChange(value, "size")}
+                  options={sizes}
+                  required
+                />
+                <Link
+                  href="https://youtube.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 text-xs text-blue-600 underline hover:text-blue-800"
+                >
+                  Click here to see the T-shirt sizing.
+                </Link>
+              </div>
             </div>
           </>
         );
@@ -613,17 +623,28 @@ export default function SignUp() {
                 required
               />
 
-              <SelectField
-                key={`member-${memberIndex}-size`}
-                label="T-Shirt Size"
-                name="size"
-                value={formData.teamMembers[memberIndex].size}
-                onChange={(value) =>
-                  handleSelectChange(value, "size", memberIndex)
-                }
-                options={sizes}
-                required
-              />
+              <div className="flex flex-col">
+                <SelectField
+                  key={`member-${memberIndex}-size`}
+                  label="T-Shirt Size"
+                  name="size"
+                  value={formData.teamMembers[memberIndex].size}
+                  onChange={(value) =>
+                    handleSelectChange(value, "size", memberIndex)
+                  }
+                  options={sizes}
+                  required
+                />
+                <Link
+                  href="https://youtube.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 text-xs text-blue-600 underline hover:text-blue-800"
+                >
+                  Click here to see the T-shirt sizing.
+                </Link>
+              </div>
+
               <SelectField
                 key={`member-${memberIndex}-coding`}
                 label="Coding Experience"
