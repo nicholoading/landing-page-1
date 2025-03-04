@@ -8,12 +8,24 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { teamName, teacherEmail, teamMembers, ...rest } = body;
 
+    // Validation: Ensure required fields are provided
+    if (!teamName || !teacherEmail || !teamMembers || teamMembers.length === 0) {
+      return NextResponse.json(
+        { error: "Missing required fields. Please provide team name, teacher email, and at least one team member." },
+        { status: 400 }
+      );
+    }
+
     // Check if team already exists
-    const { data: existingTeam } = await supabase
+    const { data: existingTeam, error: existingError } = await supabase
       .from("teams")
       .select("id")
-      .eq("team_name", teamName)
+      .eq("teamName", teamName) // Fixed column name from "team_name" to "teamName"
       .single();
+
+    if (existingError && existingError.code !== "PGRST116") { // Ignore "no rows found" error
+      throw existingError;
+    }
 
     if (existingTeam) {
       return NextResponse.json({ error: "Team name already exists" }, { status: 400 });
@@ -22,9 +34,9 @@ export async function POST(req: Request) {
     // Insert team data (without passwords)
     const { data, error } = await supabase.from("teams").insert([
       {
-        teamName: teamName,
-        teacherEmail: teacherEmail,
-        teamMembers: teamMembers, // Save team member details
+        teamName,
+        teacherEmail,
+        teamMembers, // Save team member details
         registrationStatus: "Pending",
         ...rest,
       },

@@ -213,6 +213,7 @@ export default function SignUp() {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [animate, setAnimate] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState('');
   const router = useRouter();
   const { toast } = useToast();
 
@@ -304,7 +305,10 @@ export default function SignUp() {
 
       const registerData = await registerResponse.json();
 
-      if (!registerResponse.ok) throw new Error(registerData.error);
+      if (!registerResponse.ok) {
+        setIsError(registerData.error)
+        throw new Error(registerData.error);
+      }
 
       // 2️⃣ Send confirmation emails (Ensure all required fields are included)
       const emailPayload = {
@@ -519,7 +523,7 @@ export default function SignUp() {
               {formData.representingSchool === "no" && (
                 <InputField
                   label="School Name"
-                  name="schoolName"
+                  name="teacherSchoolName"
                   type="school"
                   value={formData.teacherSchoolName}
                   onChange={handleChange}
@@ -856,7 +860,7 @@ export default function SignUp() {
             <DialogDescription>
               {isSuccess
                 ? "Thank you for signing up for the Hackathon. We've received your registration and will be in touch soon."
-                : "There was an error submitting your form. Please try again later."}
+                : isError}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
