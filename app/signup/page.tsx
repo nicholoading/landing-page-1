@@ -152,6 +152,7 @@ interface FormData {
   teacherName: string;
   teacherEmail: string;
   teacherPhone: string;
+  teacherSchoolName: string;
   size: string;
   teacherIC: string;
   teamMembers: Array<{
@@ -160,6 +161,7 @@ interface FormData {
     gender: string;
     race: string;
     grade: string;
+    schoolName: string;
     parentName: string;
     parentPhone: string;
     parentEmail: string;
@@ -181,6 +183,7 @@ const initialFormData: FormData = {
   teacherName: "",
   teacherEmail: "",
   teacherPhone: "",
+  teacherSchoolName: "",
   size: "",
   teacherIC: "",
   teamMembers: Array(3)
@@ -191,6 +194,7 @@ const initialFormData: FormData = {
       gender: "",
       race: "",
       grade: "",
+      schoolName: "",
       parentName: "",
       parentPhone: "",
       parentEmail: "",
@@ -207,7 +211,7 @@ export default function SignUp() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [animate, setAnimate] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // Added loading state
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -276,31 +280,31 @@ export default function SignUp() {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-  
+
     if (!agreeToTerms) {
       setError("You must agree to the terms and conditions.");
       setIsLoading(false);
       return;
     }
-  
+
     try {
       const formattedData = {
         ...formData,
         teamMembers: formData.teamMembers, // Store as JSONB
         registrationStatus: "Pending", // Default status
       };
-  
+
       // 1️⃣ Register the team in Supabase
       const registerResponse = await fetch("/api/register-team", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formattedData),
       });
-  
+
       const registerData = await registerResponse.json();
-  
+
       if (!registerResponse.ok) throw new Error(registerData.error);
-  
+
       // 2️⃣ Send confirmation emails (Ensure all required fields are included)
       const emailPayload = {
         teamName: formData.teamName,
@@ -308,6 +312,7 @@ export default function SignUp() {
         teacherName: formData.teacherName, // ✅ Include missing fields
         teacherPhone: formData.teacherPhone, // ✅ Ensure teacherPhone is sent
         teacherIC: formData.teacherIC, // ✅ Ensure teacherIC is sent
+        teacherSchoolName: formData.teacherSchoolName,
         size: formData.size, // ✅ Include T-shirt size
         representingSchool: formData.representingSchool,
         schoolName: formData.schoolName,
@@ -319,17 +324,17 @@ export default function SignUp() {
         state: formData.state,
         teamMembers: formData.teamMembers,
       };
-  
+
       const emailResponse = await fetch("/api/send-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(emailPayload), // ✅ Ensure correct payload
       });
-  
+
       const emailData = await emailResponse.json();
-  
+
       if (!emailResponse.ok) throw new Error(emailData.error);
-  
+
       setIsSuccess(true);
       setShowResultModal(true);
     } catch (error) {
@@ -340,8 +345,7 @@ export default function SignUp() {
       setIsLoading(false);
     }
   };
-  
-  
+
   const handleCloseResultModal = () => {
     setShowResultModal(false);
     setAnimate(false);
@@ -396,6 +400,7 @@ export default function SignUp() {
                   </div>
                 </RadioGroup>
               </div>
+
               {formData.representingSchool === "yes" && (
                 <>
                   <InputField
@@ -446,14 +451,27 @@ export default function SignUp() {
                 options={["Primary", "Secondary"]}
                 required
               />
-              <SelectField
-                label="Category"
-                name="category"
-                value={formData.category}
-                onChange={(value) => handleSelectChange(value, "category")}
-                options={["Junior-Scratch", "Senior-Scratch", "Senior-HTML"]}
-                required
-              />
+              {formData.educationLevel === "Primary" && (
+                <SelectField
+                  label="Category"
+                  name="category"
+                  value={formData.category}
+                  onChange={(value) => handleSelectChange(value, "category")}
+                  options={["Junior-Scratch"]}
+                  required
+                />
+              )}
+
+              {formData.educationLevel === "Secondary" && (
+                <SelectField
+                  label="Category"
+                  name="category"
+                  value={formData.category}
+                  onChange={(value) => handleSelectChange(value, "category")}
+                  options={["Senior-Scratch", "Senior-HTML"]}
+                  required
+                />
+              )}
             </div>
           </>
         );
@@ -494,6 +512,18 @@ export default function SignUp() {
                 onChange={handleChange}
                 required
               />
+
+              {formData.representingSchool === "no" && (
+                <InputField
+                  label="School Name"
+                  name="schoolName"
+                  type="school"
+                  value={formData.teacherSchoolName}
+                  onChange={handleChange}
+                  required
+                />
+              )}
+
               <SelectField
                 label="T-Shirt Size"
                 name="size"
@@ -515,7 +545,23 @@ export default function SignUp() {
               Team Member {memberIndex + 1} Information
             </h3>
             <div className="grid grid-cols-1 gap-6">
-              {[
+              {formData.representingSchool === 'no' && [
+                { label: "Name", name: "name", type: "text" },
+                { label: "IC", name: "ic", type: "text" },
+                { label: "School Name", name: "schoolName", type: "text" },
+              ].map((field) => (
+                <InputField
+                  key={`member-${memberIndex}-${field.name}`}
+                  label={field.label}
+                  name={field.name}
+                  type={field.type}
+                  value={formData.teamMembers[memberIndex][field.name]}
+                  onChange={(e) => handleChange(e, memberIndex)}
+                  required
+                />
+              ))}
+              
+              {formData.representingSchool === 'yes' && [
                 { label: "Name", name: "name", type: "text" },
                 { label: "IC", name: "ic", type: "text" },
               ].map((field) => (
@@ -562,6 +608,7 @@ export default function SignUp() {
                 options={grades}
                 required
               />
+
               <SelectField
                 key={`member-${memberIndex}-size`}
                 label="T-Shirt Size"
