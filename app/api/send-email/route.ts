@@ -683,7 +683,7 @@ ${teamMembers
     await Promise.all(
       recipients.map((email) =>
         transporter.sendMail({
-          from: process.env.EMAIL_USER,
+          from: `Realfun Secretariat ${process.env.EMAIL_USER}`,
           to: email,
           subject: "BugCrusher Hackathon Registration Confirmation",
           html: emailContent,
