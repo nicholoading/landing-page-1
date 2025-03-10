@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BugCruhser Sign Up",
+  title: "BugCrusher Sign Up",
 };
 
 export default function RootLayout({

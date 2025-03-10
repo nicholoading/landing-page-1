@@ -37,7 +37,7 @@ export default function Teams() {
   }, []);
 
   return (
-    <section id="teams" className="py-24">
+    <section id="teams" className="py-12">
       <div className="container mx-auto px-4 md:w-4/5 lg:w-3/4">
         <h2 className="text-3xl font-bold mb-2">Registered Teams</h2>
         <p className="text-gray-600 mb-6">
