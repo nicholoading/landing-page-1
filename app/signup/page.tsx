@@ -30,13 +30,12 @@ import Link from "next/link";
 
 const validateEmail = (email: string): string => {
   const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  return re.test(email) ? "" : "Invalid email format";
+  return re.test(email) ? "" : "Invalid email format (e.g., example@domain.com)";
 };
 
 const validateIC = (ic: string): string => {
-  // This is a simple validation. Adjust according to the actual IC format in your country.
   const re = /^\d{12}$/;
-  return re.test(ic) ? "" : "Invalid IC format. Must be 12 digits.";
+  return re.test(ic) ? "" : "Invalid IC format. Must be exactly 12 digits (e.g., 123456789012).";
 };
 
 const ProgressIndicator = ({ currentStep, totalSteps }) => (
@@ -109,10 +108,13 @@ const races = [
   "Lain-lain kaum",
 ];
 
-const grades = [
+const primaryGrades = [
   "Primary 6 (12 years old)",
   "Primary 5 (11 years old)",
   "Primary 4 (10 years old)",
+];
+
+const secondaryGrades = [
   "Form 1 (13 years old)",
   "Form 2 (14 years old)",
   "Form 3 (15 years old)",
@@ -156,6 +158,8 @@ interface FormData {
   teacherSchoolName: string;
   size: string;
   teacherIC: string;
+  teacherGender: string;
+  teacherRace: string;
   teamMembers: Array<{
     name: string;
     ic: string;
@@ -187,6 +191,8 @@ const initialFormData: FormData = {
   teacherSchoolName: "",
   size: "",
   teacherIC: "",
+  teacherGender: "",
+  teacherRace: "",
   teamMembers: Array(3)
     .fill({})
     .map(() => ({
@@ -222,12 +228,12 @@ export default function SignUp() {
     index?: number
   ) => {
     const { name, value } = e.target;
-    let error = "";
+    let errorMsg = "";
 
     if (name.includes("Email")) {
-      error = validateEmail(value);
-    } else if (name.includes("IC")) {
-      error = validateIC(value);
+      errorMsg = validateEmail(value);
+    } else if (name.includes("IC") || name === "teacherIC") {
+      errorMsg = validateIC(value);
     }
 
     setFormData((prev) => {
@@ -248,7 +254,8 @@ export default function SignUp() {
       };
     });
 
-    setError(error);
+    // Only set error if there's an error message; clear it if validation passes
+    setError(errorMsg);
   };
 
   const handleSelectChange = (value: string, name: string, index?: number) => {
@@ -292,11 +299,10 @@ export default function SignUp() {
     try {
       const formattedData = {
         ...formData,
-        teamMembers: formData.teamMembers, // Store as JSONB
-        registrationStatus: "Pending", // Default status
+        teamMembers: formData.teamMembers,
+        registrationStatus: "Pending",
       };
 
-      // 1️⃣ Register the team in Supabase
       const registerResponse = await fetch("/api/register-team", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -306,19 +312,18 @@ export default function SignUp() {
       const registerData = await registerResponse.json();
 
       if (!registerResponse.ok) {
-        setIsError(registerData.error)
+        setIsError(registerData.error);
         throw new Error(registerData.error);
       }
 
-      // 2️⃣ Send confirmation emails (Ensure all required fields are included)
       const emailPayload = {
         teamName: formData.teamName,
         teacherEmail: formData.teacherEmail,
-        teacherName: formData.teacherName, // ✅ Include missing fields
-        teacherPhone: formData.teacherPhone, // ✅ Ensure teacherPhone is sent
-        teacherIC: formData.teacherIC, // ✅ Ensure teacherIC is sent
+        teacherName: formData.teacherName,
+        teacherPhone: formData.teacherPhone,
+        teacherIC: formData.teacherIC,
         teacherSchoolName: formData.teacherSchoolName,
-        size: formData.size, // ✅ Include T-shirt size
+        size: formData.size,
         representingSchool: formData.representingSchool,
         schoolName: formData.schoolName,
         schoolAddress: formData.schoolAddress,
@@ -328,12 +333,14 @@ export default function SignUp() {
         city: formData.city,
         state: formData.state,
         teamMembers: formData.teamMembers,
+        teacherGender: formData.teacherGender,
+        teacherRace: formData.teacherRace,
       };
 
       const emailResponse = await fetch("/api/send-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(emailPayload), // ✅ Ensure correct payload
+        body: JSON.stringify(emailPayload),
       });
 
       const emailData = await emailResponse.json();
@@ -387,7 +394,7 @@ export default function SignUp() {
                 name="teamName"
                 value={formData.teamName}
                 onChange={handleChange}
-                required
+                required={true}
               />
               <div className="space-y-2">
                 <Label>Representing School</Label>
@@ -415,21 +422,21 @@ export default function SignUp() {
                     name="schoolName"
                     value={formData.schoolName}
                     onChange={handleChange}
-                    required
+                    required={true}
                   />
                   <InputField
                     label="School Address"
                     name="schoolAddress"
                     value={formData.schoolAddress}
                     onChange={handleChange}
-                    required
+                    required={true}
                   />
                   <InputField
                     label="Postal Code"
                     name="postalCode"
                     value={formData.postalCode}
                     onChange={handleChange}
-                    required
+                    required={true}
                   />
                 </>
               )}
@@ -438,7 +445,7 @@ export default function SignUp() {
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
-                required
+                required={true}
               />
               <SelectField
                 label="State"
@@ -446,17 +453,15 @@ export default function SignUp() {
                 value={formData.state}
                 onChange={(value) => handleSelectChange(value, "state")}
                 options={states}
-                required
+                required={true}
               />
               <SelectField
                 label="Education Level"
                 name="educationLevel"
                 value={formData.educationLevel}
-                onChange={(value) =>
-                  handleSelectChange(value, "educationLevel")
-                }
+                onChange={(value) => handleSelectChange(value, "educationLevel")}
                 options={["Primary", "Secondary"]}
-                required
+                required={true}
               />
               {formData.educationLevel === "Primary" && (
                 <SelectField
@@ -465,10 +470,9 @@ export default function SignUp() {
                   value={formData.category}
                   onChange={(value) => handleSelectChange(value, "category")}
                   options={["Junior-Scratch"]}
-                  required
+                  required={true}
                 />
               )}
-
               {formData.educationLevel === "Secondary" && (
                 <SelectField
                   label="Category"
@@ -476,7 +480,7 @@ export default function SignUp() {
                   value={formData.category}
                   onChange={(value) => handleSelectChange(value, "category")}
                   options={["Senior-Scratch", "Senior-HTML"]}
-                  required
+                  required={true}
                 />
               )}
             </div>
@@ -494,14 +498,14 @@ export default function SignUp() {
                 name="teacherName"
                 value={formData.teacherName}
                 onChange={handleChange}
-                required
+                required={true}
               />
               <InputField
                 label="Teacher IC"
                 name="teacherIC"
                 value={formData.teacherIC}
                 onChange={handleChange}
-                required
+                required={true}
               />
               <InputField
                 label="Teacher Email"
@@ -509,7 +513,7 @@ export default function SignUp() {
                 type="email"
                 value={formData.teacherEmail}
                 onChange={handleChange}
-                required
+                required={true}
               />
               <InputField
                 label="Teacher Phone"
@@ -517,17 +521,31 @@ export default function SignUp() {
                 type="tel"
                 value={formData.teacherPhone}
                 onChange={handleChange}
-                required
+                required={true}
               />
-
+              <SelectField
+                label="Teacher Gender"
+                name="teacherGender"
+                value={formData.teacherGender}
+                onChange={(value) => handleSelectChange(value, "teacherGender")}
+                options={["Male", "Female"]}
+                required={true}
+              />
+              <SelectField
+                label="Teacher Race"
+                name="teacherRace"
+                value={formData.teacherRace}
+                onChange={(value) => handleSelectChange(value, "teacherRace")}
+                options={races}
+                required={true}
+              />
               {formData.representingSchool === "no" && (
                 <InputField
                   label="School Name"
                   name="teacherSchoolName"
-                  type="school"
                   value={formData.teacherSchoolName}
                   onChange={handleChange}
-                  required
+                  required={true}
                 />
               )}
               <div className="flex flex-col">
@@ -537,7 +555,7 @@ export default function SignUp() {
                   value={formData.size}
                   onChange={(value) => handleSelectChange(value, "size")}
                   options={sizes}
-                  required
+                  required={true}
                 />
                 <Link
                   href="https://youtube.com"
@@ -555,6 +573,8 @@ export default function SignUp() {
       case 4:
       case 5:
         const memberIndex = currentStep - 3;
+        const applicableGrades =
+          formData.educationLevel === "Primary" ? primaryGrades : secondaryGrades;
         return (
           <>
             <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
@@ -574,7 +594,7 @@ export default function SignUp() {
                     type={field.type}
                     value={formData.teamMembers[memberIndex][field.name]}
                     onChange={(e) => handleChange(e, memberIndex)}
-                    required
+                    required={true}
                   />
                 ))}
 
@@ -590,7 +610,7 @@ export default function SignUp() {
                     type={field.type}
                     value={formData.teamMembers[memberIndex][field.name]}
                     onChange={(e) => handleChange(e, memberIndex)}
-                    required
+                    required={true}
                   />
                 ))}
               <SelectField
@@ -602,7 +622,7 @@ export default function SignUp() {
                   handleSelectChange(value, "gender", memberIndex)
                 }
                 options={["Male", "Female"]}
-                required
+                required={true}
               />
               <SelectField
                 key={`member-${memberIndex}-race`}
@@ -613,7 +633,7 @@ export default function SignUp() {
                   handleSelectChange(value, "race", memberIndex)
                 }
                 options={races}
-                required
+                required={true}
               />
               <SelectField
                 key={`member-${memberIndex}-grade`}
@@ -623,10 +643,9 @@ export default function SignUp() {
                 onChange={(value) =>
                   handleSelectChange(value, "grade", memberIndex)
                 }
-                options={grades}
-                required
+                options={applicableGrades}
+                required={true}
               />
-
               <div className="flex flex-col">
                 <SelectField
                   key={`member-${memberIndex}-size`}
@@ -637,7 +656,7 @@ export default function SignUp() {
                     handleSelectChange(value, "size", memberIndex)
                   }
                   options={sizes}
-                  required
+                  required={true}
                 />
                 <Link
                   href="https://youtube.com"
@@ -648,7 +667,6 @@ export default function SignUp() {
                   Click here to see the T-shirt sizing.
                 </Link>
               </div>
-
               <SelectField
                 key={`member-${memberIndex}-coding`}
                 label="Coding Experience"
@@ -658,7 +676,7 @@ export default function SignUp() {
                   handleSelectChange(value, "codingExperience", memberIndex)
                 }
                 options={codingExperiences}
-                required
+                required={false}
               />
               {[
                 { label: "Parent Name", name: "parentName", type: "text" },
@@ -672,7 +690,7 @@ export default function SignUp() {
                   type={field.type}
                   value={formData.teamMembers[memberIndex][field.name]}
                   onChange={(e) => handleChange(e, memberIndex)}
-                  required
+                  required={true}
                 />
               ))}
             </div>
@@ -797,7 +815,6 @@ export default function SignUp() {
         </div>
       </div>
 
-      {/* Result Modal */}
       <Dialog open={showResultModal} onOpenChange={setShowResultModal}>
         <DialogContent>
           <DialogHeader>
@@ -869,7 +886,6 @@ export default function SignUp() {
         </DialogContent>
       </Dialog>
 
-      {/* Toast component for error messages */}
       <ToastProvider>
         <ToastViewport />
       </ToastProvider>
