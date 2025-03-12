@@ -28,6 +28,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ToastProvider, ToastViewport } from "@/components/ui/toast";
 import Link from "next/link";
 
+// Validation functions
 const validateEmail = (email: string): string => {
   const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return re.test(email) ? "" : "Invalid email format (e.g., example@domain.com)";
@@ -36,6 +37,30 @@ const validateEmail = (email: string): string => {
 const validateIC = (ic: string): string => {
   const re = /^\d{12}$/;
   return re.test(ic) ? "" : "Invalid IC format. Must be exactly 12 digits (e.g., 123456789012).";
+};
+
+const validateTeamName = (teamName: string, existingTeams: string[]): string => {
+  if (!teamName.trim()) return "Team name is required.";
+
+  const normalizedInput = teamName.toUpperCase().replace(/\s+/g, ""); // Normalize: uppercase, no spaces
+  const forbiddenNames = ["BUGCRUSHER"]; // Base forbidden name
+
+  if (forbiddenNames.includes(normalizedInput)) {
+    return "Team name cannot be 'Bug Crusher' or its variations.";
+  }
+
+  for (const existing of existingTeams) {
+    const normalizedExisting = existing.toUpperCase().replace(/\s+/g, "");
+    if (
+      normalizedInput === normalizedExisting ||
+      normalizedInput.includes(normalizedExisting) ||
+      normalizedExisting.includes(normalizedInput)
+    ) {
+      return `Team name is too similar to an existing team: "${existing}".`;
+    }
+  }
+
+  return "";
 };
 
 const ProgressIndicator = ({ currentStep, totalSteps }) => (
@@ -213,7 +238,8 @@ const initialFormData: FormData = {
 export default function SignUp() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [currentStep, setCurrentStep] = useState(1);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [existingTeamNames, setExistingTeamNames] = useState<string[]>([]);
   const [showResultModal, setShowResultModal] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -223,18 +249,28 @@ export default function SignUp() {
   const router = useRouter();
   const { toast } = useToast();
 
+  useEffect(() => {
+    const fetchExistingTeams = async () => {
+      try {
+        const response = await fetch("/api/register-team", {
+          method: "GET",
+        });
+        const data = await response.json();
+        if (data.success && Array.isArray(data.teams)) {
+          setExistingTeamNames(data.teams.map((team: any) => team.teamName));
+        }
+      } catch (error) {
+        console.error("Failed to fetch existing team names:", error);
+      }
+    };
+    fetchExistingTeams();
+  }, []);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     index?: number
   ) => {
     const { name, value } = e.target;
-    let errorMsg = "";
-
-    if (name.includes("Email")) {
-      errorMsg = validateEmail(value);
-    } else if (name.includes("IC") || name === "teacherIC") {
-      errorMsg = validateIC(value);
-    }
 
     setFormData((prev) => {
       if (index !== undefined) {
@@ -243,19 +279,25 @@ export default function SignUp() {
           ...updatedTeamMembers[index],
           [name]: value,
         };
-        return {
-          ...prev,
-          teamMembers: updatedTeamMembers,
-        };
+        return { ...prev, teamMembers: updatedTeamMembers };
       }
-      return {
-        ...prev,
-        [name]: value,
-      };
+      return { ...prev, [name]: value };
     });
 
-    // Only set error if there's an error message; clear it if validation passes
-    setError(errorMsg);
+    // Validate immediately
+    let errorMsg = "";
+    if (name === "teamName") {
+      errorMsg = validateTeamName(value, existingTeamNames);
+    } else if (name.includes("Email")) {
+      errorMsg = validateEmail(value);
+    } else if (name === "ic" || name === "teacherIC") {
+      errorMsg = validateIC(value);
+    }
+
+    setErrors((prev) => ({
+      ...prev,
+      [index !== undefined ? `${name}-${index}` : name]: errorMsg,
+    }));
   };
 
   const handleSelectChange = (value: string, name: string, index?: number) => {
@@ -266,15 +308,9 @@ export default function SignUp() {
           ...updatedTeamMembers[index],
           [name]: value,
         };
-        return {
-          ...prev,
-          teamMembers: updatedTeamMembers,
-        };
+        return { ...prev, teamMembers: updatedTeamMembers };
       }
-      return {
-        ...prev,
-        [name]: value,
-      };
+      return { ...prev, [name]: value };
     });
   };
 
@@ -287,11 +323,11 @@ export default function SignUp() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
     setIsLoading(true);
 
-    if (!agreeToTerms) {
-      setError("You must agree to the terms and conditions.");
+    const newErrors = getStepErrors(currentStep);
+    setErrors(newErrors);
+    if (Object.values(newErrors).some((err) => err)) {
       setIsLoading(false);
       return;
     }
@@ -316,31 +352,31 @@ export default function SignUp() {
         throw new Error(registerData.error);
       }
 
-      const emailPayload = {
-        teamName: formData.teamName,
-        teacherEmail: formData.teacherEmail,
-        teacherName: formData.teacherName,
-        teacherPhone: formData.teacherPhone,
-        teacherIC: formData.teacherIC,
-        teacherSchoolName: formData.teacherSchoolName,
-        size: formData.size,
-        representingSchool: formData.representingSchool,
-        schoolName: formData.schoolName,
-        schoolAddress: formData.schoolAddress,
-        postalCode: formData.postalCode,
-        educationLevel: formData.educationLevel,
-        category: formData.category,
-        city: formData.city,
-        state: formData.state,
-        teamMembers: formData.teamMembers,
-        teacherGender: formData.teacherGender,
-        teacherRace: formData.teacherRace,
-      };
+      setExistingTeamNames((prev) => [...prev, formData.teamName]);
 
       const emailResponse = await fetch("/api/send-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(emailPayload),
+        body: JSON.stringify({
+          teamName: formData.teamName,
+          teacherEmail: formData.teacherEmail,
+          teacherName: formData.teacherName,
+          teacherPhone: formData.teacherPhone,
+          teacherIC: formData.teacherIC,
+          teacherSchoolName: formData.teacherSchoolName,
+          size: formData.size,
+          representingSchool: formData.representingSchool,
+          schoolName: formData.schoolName,
+          schoolAddress: formData.schoolAddress,
+          postalCode: formData.postalCode,
+          educationLevel: formData.educationLevel,
+          category: formData.category,
+          city: formData.city,
+          state: formData.state,
+          teamMembers: formData.teamMembers,
+          teacherGender: formData.teacherGender,
+          teacherRace: formData.teacherRace,
+        }),
       });
 
       const emailData = await emailResponse.json();
@@ -367,6 +403,11 @@ export default function SignUp() {
   };
 
   const nextStep = () => {
+    const stepErrors = getStepErrors(currentStep);
+    setErrors(stepErrors);
+    if (Object.values(stepErrors).some((err) => err)) {
+      return;
+    }
     setCurrentStep((prevStep) => prevStep + 1);
     scrollToTop();
   };
@@ -378,6 +419,63 @@ export default function SignUp() {
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const getStepErrors = (step: number): Record<string, string> => {
+    const newErrors: Record<string, string> = {};
+    switch (step) {
+      case 1:
+        if (!formData.teamName) newErrors.teamName = "Team name is required.";
+        else newErrors.teamName = validateTeamName(formData.teamName, existingTeamNames);
+        if (!formData.city) newErrors.city = "City is required.";
+        if (!formData.state) newErrors.state = "State is required.";
+        if (!formData.educationLevel) newErrors.educationLevel = "Education level is required.";
+        if (!formData.category) newErrors.category = "Category is required.";
+        if (formData.representingSchool === "yes") {
+          if (!formData.schoolName) newErrors.schoolName = "School name is required.";
+          if (!formData.schoolAddress) newErrors.schoolAddress = "School address is required.";
+          if (!formData.postalCode) newErrors.postalCode = "Postal code is required.";
+        }
+        break;
+      case 2:
+        if (!formData.teacherName) newErrors.teacherName = "Teacher name is required.";
+        if (!formData.teacherIC) newErrors.teacherIC = "Teacher IC is required.";
+        else newErrors.teacherIC = validateIC(formData.teacherIC);
+        if (!formData.teacherEmail) newErrors.teacherEmail = "Teacher email is required.";
+        else newErrors.teacherEmail = validateEmail(formData.teacherEmail);
+        if (!formData.teacherPhone) newErrors.teacherPhone = "Teacher phone is required.";
+        if (!formData.teacherGender) newErrors.teacherGender = "Teacher gender is required.";
+        if (!formData.teacherRace) newErrors.teacherRace = "Teacher race is required.";
+        if (!formData.size) newErrors.size = "T-shirt size is required.";
+        if (formData.representingSchool === "no" && !formData.teacherSchoolName) {
+          newErrors.teacherSchoolName = "School name is required.";
+        }
+        break;
+      case 3:
+      case 4:
+      case 5:
+        const index = step - 3;
+        const member = formData.teamMembers[index];
+        if (!member.name) newErrors[`name-${index}`] = "Name is required.";
+        if (!member.ic) newErrors[`ic-${index}`] = "IC is required.";
+        else newErrors[`ic-${index}`] = validateIC(member.ic);
+        if (!member.gender) newErrors[`gender-${index}`] = "Gender is required.";
+        if (!member.race) newErrors[`race-${index}`] = "Race is required.";
+        if (!member.grade) newErrors[`grade-${index}`] = "Grade is required.";
+        if (!member.size) newErrors[`size-${index}`] = "T-shirt size is required.";
+        if (!member.parentName) newErrors[`parentName-${index}`] = "Parent name is required.";
+        if (!member.parentPhone) newErrors[`parentPhone-${index}`] = "Parent phone is required.";
+        if (!member.parentEmail) newErrors[`parentEmail-${index}`] = "Parent email is required.";
+        else newErrors[`parentEmail-${index}`] = validateEmail(member.parentEmail);
+        if (formData.representingSchool === "no" && !member.schoolName) {
+          newErrors[`schoolName-${index}`] = "School name is required.";
+        }
+        break;
+      case 6:
+        if (!agreeToTerms) newErrors.terms = "You must agree to the terms and conditions.";
+        break;
+    }
+    return newErrors;
   };
 
   const renderStep = () => {
@@ -395,6 +493,7 @@ export default function SignUp() {
                 value={formData.teamName}
                 onChange={handleChange}
                 required={true}
+                error={errors.teamName}
               />
               <div className="space-y-2">
                 <Label>Representing School</Label>
@@ -414,7 +513,6 @@ export default function SignUp() {
                   </div>
                 </RadioGroup>
               </div>
-
               {formData.representingSchool === "yes" && (
                 <>
                   <InputField
@@ -423,6 +521,7 @@ export default function SignUp() {
                     value={formData.schoolName}
                     onChange={handleChange}
                     required={true}
+                    error={errors.schoolName}
                   />
                   <InputField
                     label="School Address"
@@ -430,6 +529,7 @@ export default function SignUp() {
                     value={formData.schoolAddress}
                     onChange={handleChange}
                     required={true}
+                    error={errors.schoolAddress}
                   />
                   <InputField
                     label="Postal Code"
@@ -437,6 +537,7 @@ export default function SignUp() {
                     value={formData.postalCode}
                     onChange={handleChange}
                     required={true}
+                    error={errors.postalCode}
                   />
                 </>
               )}
@@ -446,6 +547,7 @@ export default function SignUp() {
                 value={formData.city}
                 onChange={handleChange}
                 required={true}
+                error={errors.city}
               />
               <SelectField
                 label="State"
@@ -499,6 +601,7 @@ export default function SignUp() {
                 value={formData.teacherName}
                 onChange={handleChange}
                 required={true}
+                error={errors.teacherName}
               />
               <InputField
                 label="Teacher IC"
@@ -506,6 +609,7 @@ export default function SignUp() {
                 value={formData.teacherIC}
                 onChange={handleChange}
                 required={true}
+                error={errors.teacherIC}
               />
               <InputField
                 label="Teacher Email"
@@ -514,6 +618,7 @@ export default function SignUp() {
                 value={formData.teacherEmail}
                 onChange={handleChange}
                 required={true}
+                error={errors.teacherEmail}
               />
               <InputField
                 label="Teacher Phone"
@@ -522,6 +627,7 @@ export default function SignUp() {
                 value={formData.teacherPhone}
                 onChange={handleChange}
                 required={true}
+                error={errors.teacherPhone}
               />
               <SelectField
                 label="Teacher Gender"
@@ -546,6 +652,7 @@ export default function SignUp() {
                   value={formData.teacherSchoolName}
                   onChange={handleChange}
                   required={true}
+                  error={errors.teacherSchoolName}
                 />
               )}
               <div className="flex flex-col">
@@ -581,40 +688,60 @@ export default function SignUp() {
               Team Member {memberIndex + 1} Information
             </h3>
             <div className="grid grid-cols-1 gap-6">
-              {formData.representingSchool === "no" &&
-                [
-                  { label: "Name", name: "name", type: "text" },
-                  { label: "IC", name: "ic", type: "text" },
-                  { label: "School Name", name: "schoolName", type: "text" },
-                ].map((field) => (
+              {formData.representingSchool === "no" && (
+                <>
                   <InputField
-                    key={`member-${memberIndex}-${field.name}`}
-                    label={field.label}
-                    name={field.name}
-                    type={field.type}
-                    value={formData.teamMembers[memberIndex][field.name]}
+                    label="Name"
+                    name="name"
+                    type="text"
+                    value={formData.teamMembers[memberIndex].name}
                     onChange={(e) => handleChange(e, memberIndex)}
                     required={true}
+                    error={errors[`name-${memberIndex}`]}
                   />
-                ))}
-
-              {formData.representingSchool === "yes" &&
-                [
-                  { label: "Name", name: "name", type: "text" },
-                  { label: "IC", name: "ic", type: "text" },
-                ].map((field) => (
                   <InputField
-                    key={`member-${memberIndex}-${field.name}`}
-                    label={field.label}
-                    name={field.name}
-                    type={field.type}
-                    value={formData.teamMembers[memberIndex][field.name]}
+                    label="IC"
+                    name="ic"
+                    type="text"
+                    value={formData.teamMembers[memberIndex].ic}
                     onChange={(e) => handleChange(e, memberIndex)}
                     required={true}
+                    error={errors[`ic-${memberIndex}`]}
                   />
-                ))}
+                  <InputField
+                    label="School Name"
+                    name="schoolName"
+                    type="text"
+                    value={formData.teamMembers[memberIndex].schoolName}
+                    onChange={(e) => handleChange(e, memberIndex)}
+                    required={true}
+                    error={errors[`schoolName-${memberIndex}`]}
+                  />
+                </>
+              )}
+              {formData.representingSchool === "yes" && (
+                <>
+                  <InputField
+                    label="Name"
+                    name="name"
+                    type="text"
+                    value={formData.teamMembers[memberIndex].name}
+                    onChange={(e) => handleChange(e, memberIndex)}
+                    required={true}
+                    error={errors[`name-${memberIndex}`]}
+                  />
+                  <InputField
+                    label="IC"
+                    name="ic"
+                    type="text"
+                    value={formData.teamMembers[memberIndex].ic}
+                    onChange={(e) => handleChange(e, memberIndex)}
+                    required={true}
+                    error={errors[`ic-${memberIndex}`]}
+                  />
+                </>
+              )}
               <SelectField
-                key={`member-${memberIndex}-gender`}
                 label="Gender"
                 name="gender"
                 value={formData.teamMembers[memberIndex].gender}
@@ -625,7 +752,6 @@ export default function SignUp() {
                 required={true}
               />
               <SelectField
-                key={`member-${memberIndex}-race`}
                 label="Race"
                 name="race"
                 value={formData.teamMembers[memberIndex].race}
@@ -636,7 +762,6 @@ export default function SignUp() {
                 required={true}
               />
               <SelectField
-                key={`member-${memberIndex}-grade`}
                 label="Grade"
                 name="grade"
                 value={formData.teamMembers[memberIndex].grade}
@@ -648,7 +773,6 @@ export default function SignUp() {
               />
               <div className="flex flex-col">
                 <SelectField
-                  key={`member-${memberIndex}-size`}
                   label="T-Shirt Size"
                   name="size"
                   value={formData.teamMembers[memberIndex].size}
@@ -668,7 +792,6 @@ export default function SignUp() {
                 </Link>
               </div>
               <SelectField
-                key={`member-${memberIndex}-coding`}
                 label="Coding Experience"
                 name="codingExperience"
                 value={formData.teamMembers[memberIndex].codingExperience}
@@ -678,21 +801,33 @@ export default function SignUp() {
                 options={codingExperiences}
                 required={false}
               />
-              {[
-                { label: "Parent Name", name: "parentName", type: "text" },
-                { label: "Parent Phone", name: "parentPhone", type: "tel" },
-                { label: "Parent Email", name: "parentEmail", type: "email" },
-              ].map((field) => (
-                <InputField
-                  key={`member-${memberIndex}-${field.name}`}
-                  label={field.label}
-                  name={field.name}
-                  type={field.type}
-                  value={formData.teamMembers[memberIndex][field.name]}
-                  onChange={(e) => handleChange(e, memberIndex)}
-                  required={true}
-                />
-              ))}
+              <InputField
+                label="Parent Name"
+                name="parentName"
+                type="text"
+                value={formData.teamMembers[memberIndex].parentName}
+                onChange={(e) => handleChange(e, memberIndex)}
+                required={true}
+                error={errors[`parentName-${memberIndex}`]}
+              />
+              <InputField
+                label="Parent Phone"
+                name="parentPhone"
+                type="tel"
+                value={formData.teamMembers[memberIndex].parentPhone}
+                onChange={(e) => handleChange(e, memberIndex)}
+                required={true}
+                error={errors[`parentPhone-${memberIndex}`]}
+              />
+              <InputField
+                label="Parent Email"
+                name="parentEmail"
+                type="email"
+                value={formData.teamMembers[memberIndex].parentEmail}
+                onChange={(e) => handleChange(e, memberIndex)}
+                required={true}
+                error={errors[`parentEmail-${memberIndex}`]}
+              />
             </div>
           </>
         );
@@ -726,6 +861,9 @@ export default function SignUp() {
                   I agree to the terms and conditions
                 </label>
               </div>
+              {errors.terms && (
+                <div className="text-red-600 text-sm">{errors.terms}</div>
+              )}
             </div>
           </>
         );
@@ -754,9 +892,6 @@ export default function SignUp() {
           <ProgressIndicator currentStep={currentStep} totalSteps={6} />
           <form className="space-y-6" onSubmit={handleSubmit}>
             {renderStep()}
-
-            {error && <div className="text-red-600 text-sm">{error}</div>}
-
             <div className="flex justify-between">
               {currentStep > 1 && (
                 <Button
@@ -771,7 +906,8 @@ export default function SignUp() {
                 <Button
                   type="button"
                   onClick={nextStep}
-                  className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  disabled={Object.values(getStepErrors(currentStep)).some((err) => err)}
+                  className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   Next
                 </Button>
@@ -925,6 +1061,7 @@ const InputField = ({
   value,
   onChange,
   required = false,
+  error,
 }) => (
   <div className="space-y-2">
     <Label htmlFor={name}>{label}</Label>
@@ -935,7 +1072,9 @@ const InputField = ({
       value={value}
       onChange={onChange}
       required={required}
+      className={error ? "border-red-500" : ""}
     />
+    {error && <div className="text-red-600 text-sm">{error}</div>}
   </div>
 );
 

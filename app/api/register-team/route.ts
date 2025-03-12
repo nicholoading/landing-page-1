@@ -125,3 +125,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Submission failed: ${error.message}` }, { status: 500 });
   }
 }
+
+export async function GET() {
+  try {
+    const { data, error } = await supabase
+      .from("teams")
+      .select("teamName");
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, teams: data }, { status: 200 });
+  } catch (error: any) {
+    return NextResponse.json({ error: `Failed to fetch teams: ${error.message}` }, { status: 500 });
+  }
+}
