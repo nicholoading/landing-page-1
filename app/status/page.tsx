@@ -1,9 +1,11 @@
 // @ts-nocheck
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Teams from "@/components/Teams";
 import Image from "next/image";
 import Link from "next/link";
+import Head from "next/head";
+
 
 export default function Status() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -12,8 +14,15 @@ export default function Status() {
     setIsMobileMenuOpen((prev) => !prev);
   };
 
+  useEffect(() => {
+    document.title = "BugCrusher Status";
+  }, []);
+
   return (
     <>
+      <Head>
+        <title>BugCrusher Status</title>
+      </Head>
       <header>
         {/* Desktop Menu */}
         <div className="web-menu hidden md:block">
