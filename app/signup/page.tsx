@@ -665,7 +665,7 @@ export default function SignUp() {
                   required={true}
                 />
                 <Link
-                  href="https://youtube.com"
+                  href="https://bugcrusher.net/tshirtsize"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-1 text-xs text-blue-600 underline hover:text-blue-800"
@@ -783,7 +783,7 @@ export default function SignUp() {
                   required={true}
                 />
                 <Link
-                  href="https://youtube.com"
+                  href="https://bugcrusher.net/tshirtsize"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-1 text-xs text-blue-600 underline hover:text-blue-800"
