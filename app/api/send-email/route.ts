@@ -721,6 +721,7 @@ ${
         transporter.sendMail({
           from: `Realfun Secretariat ${process.env.EMAIL_USER}`,
           to: email,
+          cc: 'support@bugcrusher.net',
           subject: "BugCrusher Hackathon Registration Confirmation",
           html: emailContent,
         })
