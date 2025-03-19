@@ -56,6 +56,9 @@ export default function NavBar() {
           </div>
           <div className="menu-bar menu-row flex justify-between items-center min-h-[80px] mx-auto max-w-[1240px] px-5">
             <div className="logo">
+              <Link
+              href="http://bugcrusher.net"
+              >
               <Image
                 src="/logo.png"
                 alt="BugCrusher Logo"
@@ -63,6 +66,7 @@ export default function NavBar() {
                 height={125}
                 priority
               />
+              </Link>
             </div>
             <div className="menu-link">
               <ul className="flex items-center gap-4">
