@@ -31,15 +31,22 @@ import Link from "next/link";
 // Validation functions
 const validateEmail = (email: string): string => {
   const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  return re.test(email) ? "" : "Invalid email format (e.g., example@domain.com)";
+  return re.test(email)
+    ? ""
+    : "Invalid email format (e.g., example@domain.com)";
 };
 
 const validateIC = (ic: string): string => {
   const re = /^\d{12}$/;
-  return re.test(ic) ? "" : "Invalid IC format. Must be exactly 12 digits (e.g., 123456789012).";
+  return re.test(ic)
+    ? ""
+    : "Invalid IC format. Must be exactly 12 digits (e.g., 123456789012).";
 };
 
-const validateTeamName = (teamName: string, existingTeams: string[]): string => {
+const validateTeamName = (
+  teamName: string,
+  existingTeams: string[]
+): string => {
   if (!teamName.trim()) return "Team name is required.";
 
   const normalizedInput = teamName.toUpperCase().replace(/\s+/g, ""); // Normalize: uppercase, no spaces
@@ -95,6 +102,174 @@ const ProgressIndicator = ({ currentStep, totalSteps }) => (
     </div>
   </div>
 );
+
+const stateCities = {
+  Kedah: [
+    "Kuala Muda",
+    "Kota Setar",
+    "Sik",
+    "Padang Terap",
+    "Pendang",
+    "Baling",
+    "Kulim Bandar Baharu",
+    "Langkawi",
+    "Kubang Pasu",
+    "Yan",
+  ],
+  "Pulau Pinang": [
+    "Timur Laut",
+    "Barat Daya",
+    "Seberang Perai Utara",
+    "Seberang Perai Tengah",
+    "Seberang Perai Selatan",
+  ],
+  Perak: [
+    "Batang Padang",
+    "Bagan Datuk",
+    "Hilir Perak",
+    "Kuala Kangsar",
+    "Kerian",
+    "Larut Matang & Selama",
+    "Hulu Perak",
+    "Perak Tengah",
+    "Kinta Utara",
+    "Kinta Selatan",
+    "Manjung",
+    "Muallim",
+  ],
+  Selangor: [
+    "Petaling Perdana",
+    "Kuala Langat",
+    "Petaling Utama",
+    "Kuala Selangor",
+    "Klang",
+    "Sabak Bernam",
+    "Hulu Langat",
+    "Hulu Selangor",
+    "Gombak",
+    "Sepang",
+  ],
+  "Negeri Sembilan": [
+    "Seremban",
+    "Jempol dan Jelebu",
+    "Port Dickson",
+    "Kuala Pilah",
+    "Tampin",
+    "Rembau",
+  ],
+  Melaka: ["Jasin", "Alor Gajah", "Melaka Tengah"],
+  Johor: [
+    "Johor Bahru",
+    "Muar",
+    "Tangkak",
+    "Kota Tinggi",
+    "Mersing",
+    "Segamat",
+    "Pontian",
+    "Kluang",
+    "Batu Pahat",
+    "Kulai",
+    "Pasir Gudang",
+  ],
+  Perlis: ['Kangar'],
+  Pahang: [
+    "Bentong",
+    "Raub",
+    "Cameron Highlands",
+    "Temerloh",
+    "Jerantut",
+    "Rompin",
+    "Lipis",
+    "Maran",
+    "Kuantan",
+    "Bera",
+    "Pekan",
+  ],
+  Terengganu: [
+    "Kuala Terengganu",
+    "Hulu Terengganu",
+    "Kuala Nerus",
+    "Besut",
+    "Dungun",
+    "Marang",
+    "Kemaman",
+    "Setiu",
+  ],
+  Kelantan: [
+    "Kota Bharu",
+    "Pasir Mas",
+    "Pasir Puteh",
+    "Tanah Merah",
+    "Kuala Krai",
+    "Gua Musang",
+    "Bachok",
+    "Tumpat",
+    "Machang",
+    "Jeli",
+  ],
+  Sabah: [
+    "Keningau",
+    "Kuala Penyu",
+    "Ranau",
+    "Pensiangan Nabawan",
+    "Tambunan",
+    "Beaufort",
+    "Tawau",
+    "Tenom",
+    "Sandakan",
+    "Sipitang",
+    "Beluran",
+    "Telupid",
+    "Papar",
+    "Lahad Datu",
+    "Semporna",
+    "Kinabatangan",
+    "Kota Kinabalu",
+    "Kunak",
+    "Penampang",
+    "Kota Marudu",
+    "Tuaran",
+    "Pitas",
+    "Kota Belud",
+    "Kudat",
+  ],
+  "Kuala Lumpur": ["Bangsar/Pudu", "Keramat", "Sentul"],
+  Putrajaya: ["Putrajaya"],
+  Labuan: ["Labuan"],
+  Sarawak: [
+    "Kuching",
+    "Padawan",
+    "Bau",
+    "Lundu",
+    "Serian",
+    "Simunjan",
+    "Sri Aman",
+    "Lubok Antu",
+    "Betong",
+    "Saratok",
+    "Sarikei",
+    "Meradong",
+    "Julau",
+    "Sibu",
+    "Kanowit",
+    "Selangau",
+    "Kapit",
+    "Song",
+    "Belaga",
+    "Mukah",
+    "Dalat",
+    "Daro",
+    "Tatau/Sebauh",
+    "Miri",
+    "Subis",
+    "Baram",
+    "Limbang",
+    "Lawas",
+    "Samarahan",
+    "Bintulu",
+  ],
+ 
+};
 
 const states = [
   "Johor",
@@ -245,7 +420,7 @@ export default function SignUp() {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [animate, setAnimate] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState('');
+  const [isError, setIsError] = useState("");
   const router = useRouter();
   const { toast } = useToast();
 
@@ -426,28 +601,45 @@ export default function SignUp() {
     switch (step) {
       case 1:
         if (!formData.teamName) newErrors.teamName = "Team name is required.";
-        else newErrors.teamName = validateTeamName(formData.teamName, existingTeamNames);
+        else
+          newErrors.teamName = validateTeamName(
+            formData.teamName,
+            existingTeamNames
+          );
         if (!formData.city) newErrors.city = "City is required.";
         if (!formData.state) newErrors.state = "State is required.";
-        if (!formData.educationLevel) newErrors.educationLevel = "Education level is required.";
+        if (!formData.educationLevel)
+          newErrors.educationLevel = "Education level is required.";
         if (!formData.category) newErrors.category = "Category is required.";
         if (formData.representingSchool === "yes") {
-          if (!formData.schoolName) newErrors.schoolName = "School name is required.";
-          if (!formData.schoolAddress) newErrors.schoolAddress = "School address is required.";
-          if (!formData.postalCode) newErrors.postalCode = "Postal code is required.";
+          if (!formData.schoolName)
+            newErrors.schoolName = "School name is required.";
+          if (!formData.schoolAddress)
+            newErrors.schoolAddress = "School address is required.";
+          if (!formData.postalCode)
+            newErrors.postalCode = "Postal code is required.";
         }
         break;
       case 2:
-        if (!formData.teacherName) newErrors.teacherName = "Teacher name is required.";
-        if (!formData.teacherIC) newErrors.teacherIC = "Teacher IC is required.";
+        if (!formData.teacherName)
+          newErrors.teacherName = "Teacher name is required.";
+        if (!formData.teacherIC)
+          newErrors.teacherIC = "Teacher IC is required.";
         else newErrors.teacherIC = validateIC(formData.teacherIC);
-        if (!formData.teacherEmail) newErrors.teacherEmail = "Teacher email is required.";
+        if (!formData.teacherEmail)
+          newErrors.teacherEmail = "Teacher email is required.";
         else newErrors.teacherEmail = validateEmail(formData.teacherEmail);
-        if (!formData.teacherPhone) newErrors.teacherPhone = "Teacher phone is required.";
-        if (!formData.teacherGender) newErrors.teacherGender = "Teacher gender is required.";
-        if (!formData.teacherRace) newErrors.teacherRace = "Teacher race is required.";
+        if (!formData.teacherPhone)
+          newErrors.teacherPhone = "Teacher phone is required.";
+        if (!formData.teacherGender)
+          newErrors.teacherGender = "Teacher gender is required.";
+        if (!formData.teacherRace)
+          newErrors.teacherRace = "Teacher race is required.";
         if (!formData.size) newErrors.size = "T-shirt size is required.";
-        if (formData.representingSchool === "no" && !formData.teacherSchoolName) {
+        if (
+          formData.representingSchool === "no" &&
+          !formData.teacherSchoolName
+        ) {
           newErrors.teacherSchoolName = "School name is required.";
         }
         break;
@@ -459,20 +651,27 @@ export default function SignUp() {
         if (!member.name) newErrors[`name-${index}`] = "Name is required.";
         if (!member.ic) newErrors[`ic-${index}`] = "IC is required.";
         else newErrors[`ic-${index}`] = validateIC(member.ic);
-        if (!member.gender) newErrors[`gender-${index}`] = "Gender is required.";
+        if (!member.gender)
+          newErrors[`gender-${index}`] = "Gender is required.";
         if (!member.race) newErrors[`race-${index}`] = "Race is required.";
         if (!member.grade) newErrors[`grade-${index}`] = "Grade is required.";
-        if (!member.size) newErrors[`size-${index}`] = "T-shirt size is required.";
-        if (!member.parentName) newErrors[`parentName-${index}`] = "Parent name is required.";
-        if (!member.parentPhone) newErrors[`parentPhone-${index}`] = "Parent phone is required.";
-        if (!member.parentEmail) newErrors[`parentEmail-${index}`] = "Parent email is required.";
-        else newErrors[`parentEmail-${index}`] = validateEmail(member.parentEmail);
+        if (!member.size)
+          newErrors[`size-${index}`] = "T-shirt size is required.";
+        if (!member.parentName)
+          newErrors[`parentName-${index}`] = "Parent name is required.";
+        if (!member.parentPhone)
+          newErrors[`parentPhone-${index}`] = "Parent phone is required.";
+        if (!member.parentEmail)
+          newErrors[`parentEmail-${index}`] = "Parent email is required.";
+        else
+          newErrors[`parentEmail-${index}`] = validateEmail(member.parentEmail);
         if (formData.representingSchool === "no" && !member.schoolName) {
           newErrors[`schoolName-${index}`] = "School name is required.";
         }
         break;
       case 6:
-        if (!agreeToTerms) newErrors.terms = "You must agree to the terms and conditions.";
+        if (!agreeToTerms)
+          newErrors.terms = "You must agree to the terms and conditions.";
         break;
     }
     return newErrors;
@@ -541,27 +740,36 @@ export default function SignUp() {
                   />
                 </>
               )}
-              <InputField
-                label="City"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                required={true}
-                error={errors.city}
-              />
               <SelectField
                 label="State"
                 name="state"
                 value={formData.state}
-                onChange={(value) => handleSelectChange(value, "state")}
+                onChange={(value) => {
+                  handleSelectChange(value, "state");
+                  // Reset city when state changes
+                  handleSelectChange("", "city");
+                }}
                 options={states}
                 required={true}
+              />
+              <SelectField
+                label="City"
+                name="city"
+                value={formData.city}
+                onChange={(value) => handleSelectChange(value, "city")}
+                options={
+                  formData.state ? stateCities[formData.state] || [] : []
+                }
+                required={true}
+                disabled={!formData.state} // Disable until state is selected
               />
               <SelectField
                 label="Education Level"
                 name="educationLevel"
                 value={formData.educationLevel}
-                onChange={(value) => handleSelectChange(value, "educationLevel")}
+                onChange={(value) =>
+                  handleSelectChange(value, "educationLevel")
+                }
                 options={["Primary", "Secondary"]}
                 required={true}
               />
@@ -588,6 +796,7 @@ export default function SignUp() {
             </div>
           </>
         );
+
       case 2:
         return (
           <>
@@ -681,7 +890,9 @@ export default function SignUp() {
       case 5:
         const memberIndex = currentStep - 3;
         const applicableGrades =
-          formData.educationLevel === "Primary" ? primaryGrades : secondaryGrades;
+          formData.educationLevel === "Primary"
+            ? primaryGrades
+            : secondaryGrades;
         return (
           <>
             <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
@@ -906,7 +1117,9 @@ export default function SignUp() {
                 <Button
                   type="button"
                   onClick={nextStep}
-                  disabled={Object.values(getStepErrors(currentStep)).some((err) => err)}
+                  disabled={Object.values(getStepErrors(currentStep)).some(
+                    (err) => err
+                  )}
                   className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   Next
